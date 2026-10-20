@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Catatan Angkringan</title>
+<meta name="description" content="Pencatatan pemasukan harian angkringan">
+<meta name="theme-color" content="#f59e0b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Angkringan">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-512.png">
+<link rel="icon" type="image/png" href="icon-512.png">
+<style>
+  :root {
+    --bg: #0f172a;
+    --bg-card: #1e293b;
+    --bg-soft: #334155;
+    --accent: #f59e0b;
+    --accent-hover: #d97706;
+    --green: #10b981;
+    --blue: #3b82f6;
+    --red: #ef4444;
+    --text: #f1f5f9;
+    --text-dim: #94a3b8;
+    --border: #334155;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 12px;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    overscroll-behavior: none;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+
+  header { text-align: center; padding: 16px 0 20px; }
+  header h1 {
+    font-size: 1.5rem;
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; font-weight: 800;
+  }
+  header p { color: var(--text-dim); font-size: .85rem; margin-top: 4px; }
+  .clock {
+    display: inline-block; margin-top: 8px; font-size: .8rem;
+    color: var(--text-dim); background: var(--bg-card);
+    padding: 4px 12px; border-radius: 20px;
+  }
+
+  .grid { display: grid; gap: 12px; }
+  @media (min-width: 700px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+
+  .card {
+    background: var(--bg-card); border-radius: 16px; padding: 16px;
+    border: 1px solid var(--border); box-shadow: 0 4px 20px rgba(0,0,0,.2);
+  }
+  .card h2 {
+    font-size: 1rem; margin-bottom: 12px; display: flex;
+    align-items: center; gap: 8px; color: var(--text);
+  }
+  .card h2 .icon { font-size: 1.2rem; }
+
+  .form-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  input, select, button {
+    font-family: inherit; font-size: .95rem; border-radius: 10px;
+    border: 1px solid var(--border); padding: 10px 12px;
+    background: var(--bg-soft); color: var(--text); outline: none;
+    transition: all .15s;
+  }
+  input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(245,158,11,.15); }
+  input::placeholder { color: var(--text-dim); }
+  button { cursor: pointer; font-weight: 600; border: none; transition: transform .1s, background .15s; }
+  button:active { transform: scale(.97); }
+  .btn-primary { background: var(--accent); color: #1a1a1a; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-green:hover { background: #059669; }
+  .btn-blue { background: var(--blue); color: #fff; }
+  .btn-blue:hover { background: #2563eb; }
+  .btn-red { background: var(--red); color: #fff; }
+  .btn-red:hover { background: #dc2626; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+  .btn-ghost:hover { background: var(--bg-soft); color: var(--text); }
+  .btn-sm { padding: 6px 10px; font-size: .8rem; border-radius: 8px; }
+  .btn-block { width: 100%; }
+
+  .menu-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .menu-chip {
+    background: var(--bg-soft); border: 1px solid var(--border);
+    padding: 8px 12px; border-radius: 10px; font-size: .85rem;
+    cursor: pointer; transition: all .15s;
+    display: flex; flex-direction: column; align-items: flex-start;
+    line-height: 1.2;
+  }
+  .menu-chip:hover { border-color: var(--accent); background: #3d4a5c; }
+  .menu-chip .harga { color: var(--accent); font-size: .75rem; font-weight: 700; }
+  .menu-chip .del { color: var(--red); font-size: .7rem; margin-left: 6px; opacity: .6; }
+  .menu-chip .del:hover { opacity: 1; }
+
+  .order-list { min-height: 60px; }
+  .order-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px dashed var(--border);
+    font-size: .9rem; gap: 8px;
+  }
+  .order-item:last-child { border-bottom: none; }
+  .order-item .name { flex: 1; }
+  .order-item .qty-ctrl { display: flex; align-items: center; gap: 6px; }
+  .order-item .qty-ctrl button {
+    width: 24px; height: 24px; padding: 0; border-radius: 6px;
+    background: var(--bg-soft); border: 1px solid var(--border);
+    color: var(--text); font-size: .9rem; line-height: 1;
+  }
+  .order-item .qty-ctrl button:hover { border-color: var(--accent); }
+  .order-item .subtotal { font-weight: 700; color: var(--accent); min-width: 70px; text-align: right; }
+  .empty { color: var(--text-dim); font-size: .85rem; text-align: center; padding: 16px 0; font-style: italic; }
+
+  .total-box {
+    margin-top: 12px; padding: 14px; border-radius: 12px;
+    background: linear-gradient(135deg, #422006, #1c1917);
+    border: 1px solid #78350f;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .total-box .label { color: var(--text-dim); font-size: .8rem; }
+  .total-box .value { font-size: 1.4rem; font-weight: 800; color: var(--accent); }
+
+  .quick-nominal { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .quick-nominal button {
+    flex: 1 1 auto; min-width: 60px; padding: 8px 6px; font-size: .8rem;
+    background: var(--bg-soft); border: 1px solid var(--border); color: var(--text);
+  }
+  .quick-nominal button:hover { border-color: var(--accent); color: var(--accent); }
+
+  .method-group { display: flex; gap: 8px; margin: 8px 0; }
+  .method-group label {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    gap: 6px; padding: 10px; background: var(--bg-soft);
+    border: 2px solid var(--border); border-radius: 10px;
+    cursor: pointer; font-size: .85rem; font-weight: 600; transition: all .15s;
+  }
+  .method-group input { display: none; }
+  .method-group input:checked + span { color: var(--accent); }
+  .method-group label:has(input:checked) { border-color: var(--accent); background: rgba(245,158,11,.1); }
+
+  .kembalian-box {
+    display: flex; justify-content: space-between; padding: 10px 14px;
+    background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.4);
+    border-radius: 10px; margin: 8px 0; font-size: .9rem;
+  }
+  .kembalian-box .value { font-weight: 800; color: var(--green); }
+
+  .rekap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .rekap-item {
+    padding: 12px; border-radius: 12px;
+    background: var(--bg-soft); border: 1px solid var(--border);
+  }
+  .rekap-item .lbl { font-size: .75rem; color: var(--text-dim); margin-bottom: 4px; }
+  .rekap-item .val { font-size: 1.1rem; font-weight: 800; }
+  .rekap-item.tunai { border-color: rgba(16,185,129,.4); }
+  .rekap-item.tunai .val { color: var(--green); }
+  .rekap-item.qris { border-color: rgba(59,130,246,.4); }
+  .rekap-item.qris .val { color: var(--blue); }
+  .rekap-item.total { grid-column: span 2; background: linear-gradient(135deg, #422006, #1c1917); border-color: #78350f; }
+  .rekap-item.total .val { color: var(--accent); font-size: 1.5rem; }
+
+  .filter-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .filter-row input[type="date"] { flex: 1; min-width: 140px; }
+
+  .trx-list { max-height: 400px; overflow-y: auto; }
+  .trx-item {
+    padding: 10px; border-radius: 10px; background: var(--bg-soft);
+    margin-bottom: 8px; border-left: 3px solid var(--accent); font-size: .85rem;
+  }
+  .trx-item.tunai { border-left-color: var(--green); }
+  .trx-item.qris { border-left-color: var(--blue); }
+  .trx-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .trx-time { color: var(--text-dim); font-size: .75rem; }
+  .trx-total { font-weight: 800; color: var(--accent); }
+  .trx-items { color: var(--text-dim); font-size: .8rem; margin-bottom: 6px; }
+  .trx-actions { display: flex; gap: 6px; margin-top: 6px; }
+  .trx-actions button { padding: 4px 10px; font-size: .75rem; border-radius: 6px; }
+
+  .tabs {
+    display: flex; gap: 6px; margin-bottom: 12px;
+    background: var(--bg-card); padding: 6px; border-radius: 12px;
+    border: 1px solid var(--border); position: sticky; top: 0; z-index: 50;
+  }
+  .tabs button {
+    flex: 1; padding: 10px 4px; background: transparent; color: var(--text-dim);
+    border-radius: 8px; font-size: .75rem;
+  }
+  .tabs button.active { background: var(--accent); color: #1a1a1a; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--green); color: #fff; padding: 12px 20px;
+    border-radius: 10px; font-size: .85rem; font-weight: 600;
+    box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    transition: transform .3s, opacity .3s;
+    z-index: 9999; opacity: 0; max-width: 90vw; text-align: center;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  .toast.error { background: var(--red); }
+
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    display: none; align-items: center; justify-content: center;
+    padding: 16px; z-index: 10000;
+  }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: var(--bg-card); border-radius: 16px; padding: 20px;
+    max-width: 400px; width: 100%; border: 1px solid var(--border);
+  }
+  .modal h3 { margin-bottom: 12px; font-size: 1.1rem; }
+  .modal .actions { display: flex; gap: 8px; margin-top: 16px; }
+  .modal .actions button { flex: 1; }
+
+  .settings-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+  .settings-row label { font-size: .85rem; color: var(--text-dim); flex: 1; min-width: 120px; }
+  .settings-row input { flex: 1; min-width: 100px; }
+
+  #installBanner {
+    display: none; position: fixed; bottom: 16px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-card); border: 2px solid var(--accent);
+    padding: 14px 18px; border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.5);
+    z-index: 9998; align-items: center; gap: 12px; max-width: 92vw;
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-soft); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>🍢 Catatan Angkringan</h1>
+    <p>Pencatatan pemasukan harian sederhana</p>
+    <div class="clock" id="clock">Memuat waktu...</div>
+  </header>
+
+  <div class="tabs">
+    <button data-tab="kasir" class="active">🛒 Kasir</button>
+    <button data-tab="rekap">📊 Rekap</button>
+    <button data-tab="riwayat">📜 Riwayat</button>
+    <button data-tab="menu">🍽️ Menu</button>
+    <button data-tab="setting">⚙️ Setting</button>
+  </div>
+
+  <!-- KASIR -->
+  <div class="tab-panel active" id="tab-kasir">
+    <div class="grid grid-2">
+      <div class="card">
+        <h2><span class="icon">🍽️</span> Pilih Menu</h2>
+        <div id="menuList" class="menu-list"></div>
+        <div style="margin-top:12px; display:flex; gap:8px;">
+          <input type="text" id="customNama" placeholder="Item custom..." style="flex:2;">
+          <input type="number" id="customHarga" placeholder="Harga" style="flex:1; min-width:80px;">
+          <button class="btn-primary btn-sm" onclick="tambahCustomItem()">+</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="icon">🛒</span> Pesanan</h2>
+        <div class="order-list" id="orderList">
+          <div class="empty">Belum ada pesanan</div>
+        </div>
+        <div class="total-box">
+          <span class="label">Total Pesanan</span>
+          <span class="value" id="totalPesanan">Rp 0</span>
+        </div>
+
+        <div style="margin-top:12px;">
+          <label style="font-size:.85rem; color:var(--text-dim); display:block; margin-bottom:6px;">Uang Pelanggan</label>
+          <input type="number" id="uangPelanggan" placeholder="Masukkan nominal..." style="width:100%; font-size:1.1rem; font-weight:700;" oninput="hitungKembalian()">
+          <div class="quick-nominal">
+            <button onclick="quickNominal(5000)">5rb</button>
+            <button onclick="quickNominal(10000)">10rb</button>
+            <button onclick="quickNominal(20000)">20rb</button>
+            <button onclick="quickNominal(50000)">50rb</button>
+            <button onclick="quickNominal(100000)">100rb</button>
+            <button onclick="uangPas()">Uang Pas</button>
+            <button onclick="document.getElementById('uangPelanggan').value=''; hitungKembalian();">Hapus</button>
+          </div>
+
+          <div class="kembalian-box">
+            <span>Kembalian</span>
+            <span class="value" id="kembalian">Rp 0</span>
+          </div>
+
+          <div class="method-group">
+            <label>
+              <input type="radio" name="metode" value="tunai" checked>
+              <span>💵 Tunai</span>
+            </label>
+            <label>
+              <input type="radio" name="metode" value="qris">
+              <span>📱 QRIS/Dana</span>
+            </label>
+          </div>
+
+          <button class="btn-green btn-block" id="btnSimpanTrx" style="margin-top:8px; padding:14px; font-size:1rem;" onclick="simpanTransaksi()">
+            ✅ Simpan Transaksi
+          </button>
+          <button class="btn-ghost btn-block" id="btnBatalEdit" style="margin-top:6px; display:none;" onclick="batalEdit()">
+            ❌ Batal Edit
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REKAP -->
+  <div class="tab-panel" id="tab-rekap">
+    <div class="card">
+      <h2><span class="icon">📊</span> Rekap Harian <span style="font-size:.8rem; color:var(--text-dim); font-weight:400; margin-left:auto;" id="rekapTanggalLabel"></span></h2>
+      <div class="rekap-grid">
+        <div class="rekap-item tunai">
+          <div class="lbl">💵 Tunai</div>
+          <div class="val" id="rekapTunai">Rp 0</div>
+          <div class="lbl" id="rekapTunaiCount">0 transaksi</div>
+        </div>
+        <div class="rekap-item qris">
+          <div class="lbl">📱 QRIS/Dana</div>
+          <div class="val" id="rekapQris">Rp 0</div>
+          <div class="lbl" id="rekapQrisCount">0 transaksi</div>
+        </div>
+        <div class="rekap-item total">
+          <div class="lbl">💰 Total Pemasukan</div>
+          <div class="val" id="rekapTotal">Rp 0</div>
+          <div class="lbl" id="rekapTotalCount">0 transaksi</div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
+        <div style="display:flex; justify-content:space-between; font-size:.85rem; color:var(--text-dim); margin-bottom:6px;">
+          <span>Jam Operasional</span>
+          <span id="jamOpLabel">-</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:.85rem; color:var(--text-dim);">
+          <span>Tanggal Bisnis</span>
+          <span id="tanggalBisnisLabel">-</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIWAYAT -->
+  <div class="tab-panel" id="tab-riwayat">
+    <div class="card">
+      <h2><span class="icon">📜</span> Riwayat Transaksi</h2>
+      <div class="filter-row">
+        <input type="date" id="filterTanggal" onchange="renderRiwayat()">
+        <select id="filterMetode" onchange="renderRiwayat()">
+          <option value="all">Semua Metode</option>
+          <option value="tunai">Tunai</option>
+          <option value="qris">QRIS/Dana</option>
+        </select>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:.85rem; color:var(--text-dim); margin-bottom:8px;">
+        <span id="riwayatCount">0 transaksi</span>
+        <span id="riwayatTotal" style="color:var(--accent); font-weight:700;">Rp 0</span>
+      </div>
+      <div class="trx-list" id="trxList"></div>
+    </div>
+  </div>
+
+  <!-- MENU -->
+  <div class="tab-panel" id="tab-menu">
+    <div class="card">
+      <h2><span class="icon">🍽️</span> Daftar Menu</h2>
+      <div class="form-row">
+        <input type="text" id="menuNama" placeholder="Nama menu" style="flex:2;">
+        <input type="number" id="menuHarga" placeholder="Harga" style="flex:1; min-width:90px;">
+        <button class="btn-primary" onclick="tambahMenu()">Tambah</button>
+      </div>
+      <div class="menu-list" id="menuListFull" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <!-- SETTING -->
+  <div class="tab-panel" id="tab-setting">
+    <div class="card">
+      <h2><span class="icon">⚙️</span> Pengaturan</h2>
+
+      <div class="settings-row">
+        <label>Jam Tutup (akhir hari bisnis)</label>
+        <input type="time" id="jamTutup" onchange="simpanSetting()">
+      </div>
+      <p style="font-size:.75rem; color:var(--text-dim); margin-bottom:16px;">
+        Contoh: tutup jam 02:00. Transaksi setelah tengah malam sampai jam ini tetap dihitung untuk hari bisnis kemarin.
+      </p>
+
+      <div style="border-top:1px solid var(--border); padding-top:16px; margin-top:8px;">
+        <h2 style="font-size:.9rem; margin-bottom:10px;">💾 Backup & Data</h2>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn-blue" onclick="eksporCSV()">📥 Ekspor CSV</button>
+          <button class="btn-green" onclick="backupJSON()">💾 Backup JSON</button>
+          <button class="btn-ghost" onclick="document.getElementById('importFile').click()">📂 Import Backup</button>
+          <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importJSON(event)">
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--border); padding-top:16px; margin-top:16px;">
+        <h2 style="font-size:.9rem; margin-bottom:10px; color:var(--red);">⚠️ Zona Bahaya</h2>
+        <button class="btn-red btn-block" onclick="konfirmasiReset()">🔄 Reset Hari Ini</button>
+        <p style="font-size:.75rem; color:var(--text-dim); margin-top:6px; text-align:center;">
+          Menghapus semua transaksi pada hari bisnis ini. Gunakan setelah tutup toko.
+        </p>
+      </div>
+
+      <div style="border-top:1px solid var(--border); padding-top:16px; margin-top:16px; font-size:.75rem; color:var(--text-dim); text-align:center;">
+        Data tersimpan otomatis di browser (localStorage).<br>
+        Disarankan backup JSON rutin agar data aman.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3 id="modalTitle">Konfirmasi</h3>
+    <p id="modalText" style="color:var(--text-dim); font-size:.9rem;"></p>
+    <div class="actions">
+      <button class="btn-ghost" onclick="closeModal()">Batal</button>
+      <button class="btn-red" id="modalConfirm">Ya, Lanjutkan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Install Banner -->
+<div id="installBanner">
+  <span style="font-size:1.6rem;">📲</span>
+  <div style="flex:1;">
+    <div style="font-size:.85rem; font-weight:700; color:#f1f5f9;">Install Aplikasi</div>
+    <div style="font-size:.75rem; color:#94a3b8;">Buka lebih cepat & bisa offline</div>
+  </div>
+  <button id="btnInstall" style="background:#f59e0b; color:#1a1a1a; border:none; padding:8px 14px; border-radius:8px; font-weight:700; cursor:pointer;">Install</button>
+  <button id="btnCloseInstall" style="background:transparent; color:#94a3b8; border:none; font-size:1.2rem; cursor:pointer; padding:0 4px;">×</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ STATE ============ */
+const LS_KEY = 'angkringan_data_v1';
+let state = { menus: [], transaksi: [], settings: { jamTutup: '02:00' } };
+let currentOrder = [];
+let editTrxId = null;
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      state = { ...state, ...parsed };
+      if (!state.settings) state.settings = { jamTutup: '02:00' };
+    }
+  } catch (e) { console.error('Load error', e); }
+
+  if (state.menus.length === 0) {
+    state.menus = [
+      { id: uid(), nama: 'Sate Usus', harga: 3000 },
+      { id: uid(), nama: 'Sate Telur Puyuh', harga: 4000 },
+      { id: uid(), nama: 'Tahu Bacem', harga: 3000 },
+      { id: uid(), nama: 'Tempe Bacem', harga: 3000 },
+      { id: uid(), nama: 'Nasi Kucing', harga: 4000 },
+      { id: uid(), nama: 'Es Teh', harga: 3000 },
+      { id: uid(), nama: 'Teh Hangat', harga: 2000 },
+      { id: uid(), nama: 'Kopi', harga: 4000 },
+      { id: uid(), nama: 'Jeruk Hangat', harga: 4000 },
+      { id: uid(), nama: 'Air Mineral', harga: 3000 }
+    ];
+    saveState();
+  }
+}
+function saveState() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+  catch (e) { toast('Gagal menyimpan data!', true); }
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+/* ============ UTIL ============ */
+function rupiah(n) {
+  if (isNaN(n) || n === null) n = 0;
+  return 'Rp ' + Math.round(n).toLocaleString('id-ID');
+}
+function parseNominal(str) { return Number(String(str).replace(/[^\d]/g, '')) || 0; }
+function toast(msg, isError = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (isError ? ' error' : '');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.className = 'toast'; }, 2200);
+}
+
+/* ============ TANGGAL BISNIS ============ */
+function getTanggalBisnis(date = new Date()) {
+  const jamTutup = state.settings.jamTutup || '02:00';
+  const [hh, mm] = jamTutup.split(':').map(Number);
+  const tutupMenit = hh * 60 + mm;
+  const nowMenit = date.getHours() * 60 + date.getMinutes();
+  const d = new Date(date);
+  if (nowMenit < tutupMenit) d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+function getTanggalBisnisFromISO(isoStr) { return getTanggalBisnis(new Date(isoStr)); }
+function formatTanggalPanjang(ymd) {
+  if (!ymd) return '-';
+  const [y, m, d] = ymd.split('-');
+  const bulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  return `${parseInt(d)} ${bulan[parseInt(m)-1]} ${y}`;
+}
+
+/* ============ CLOCK ============ */
+function updateClock() {
+  const now = new Date();
+  const hari = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][now.getDay()];
+  const tgl = formatTanggalPanjang(now.toISOString().slice(0,10));
+  const jam = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const tb = getTanggalBisnis(now);
+  document.getElementById('clock').textContent = `${hari}, ${tgl} • ${jam} • Bisnis: ${formatTanggalPanjang(tb)}`;
+}
+setInterval(updateClock, 1000);
+
+/* ============ MENU ============ */
+function renderMenu() {
+  const list = document.getElementById('menuList');
+  const listFull = document.getElementById('menuListFull');
+  list.innerHTML = state.menus.map(m => `
+    <div class="menu-chip" onclick="addToOrder('${m.id}')">
+      ${m.nama}
+      <span class="harga">${rupiah(m.harga)}</span>
+    </div>
+  `).join('') || '<div class="empty">Belum ada menu. Tambahkan dulu.</div>';
+
+  listFull.innerHTML = state.menus.map(m => `
+    <div class="menu-chip" style="cursor:default;">
+      ${m.nama} <span class="harga">${rupiah(m.harga)}</span>
+      <span class="del btn-sm" onclick="event.stopPropagation(); hapusMenu('${m.id}')">🗑️ hapus</span>
+    </div>
+  `).join('') || '<div class="empty">Belum ada menu.</div>';
+}
+function tambahMenu() {
+  const nama = document.getElementById('menuNama').value.trim();
+  const harga = parseNominal(document.getElementById('menuHarga').value);
+  if (!nama || !harga) return toast('Nama & harga wajib diisi', true);
+  state.menus.push({ id: uid(), nama, harga });
+  saveState(); renderMenu();
+  document.getElementById('menuNama').value = '';
+  document.getElementById('menuHarga').value = '';
+  toast('Menu ditambahkan');
+}
+function hapusMenu(id) {
+  showConfirm('Hapus menu ini?', 'Menu akan dihapus dari daftar. Transaksi lama tidak terpengaruh.', () => {
+    state.menus = state.menus.filter(m => m.id !== id);
+    saveState(); renderMenu();
+    toast('Menu dihapus');
+  });
+}
+
+/* ============ ORDER ============ */
+function addToOrder(menuId) {
+  const menu = state.menus.find(m => m.id === menuId);
+  if (!menu) return;
+  const existing = currentOrder.find(o => o.nama === menu.nama && o.harga === menu.harga);
+  if (existing) existing.qty++;
+  else currentOrder.push({ nama: menu.nama, harga: menu.harga, qty: 1 });
+  renderOrder();
+}
+function tambahCustomItem() {
+  const nama = document.getElementById('customNama').value.trim();
+  const harga = parseNominal(document.getElementById('customHarga').value);
+  if (!nama || !harga) return toast('Isi nama & harga custom', true);
+  const existing = currentOrder.find(o => o.nama === nama && o.harga === harga);
+  if (existing) existing.qty++;
+  else currentOrder.push({ nama, harga, qty: 1 });
+  document.getElementById('customNama').value = '';
+  document.getElementById('customHarga').value = '';
+  renderOrder();
+}
+function ubahQty(idx, delta) {
+  currentOrder[idx].qty += delta;
+  if (currentOrder[idx].qty <= 0) currentOrder.splice(idx, 1);
+  renderOrder();
+}
+function renderOrder() {
+  const list = document.getElementById('orderList');
+  if (currentOrder.length === 0) {
+    list.innerHTML = '<div class="empty">Belum ada pesanan</div>';
+  } else {
+    list.innerHTML = currentOrder.map((o, i) => `
+      <div class="order-item">
+        <span class="name">${o.nama}</span>
+        <div class="qty-ctrl">
+          <button onclick="ubahQty(${i}, -1)">−</button>
+          <span>${o.qty}</span>
+          <button onclick="ubahQty(${i}, 1)">+</button>
+        </div>
+        <span class="subtotal">${rupiah(o.harga * o.qty)}</span>
+      </div>
+    `).join('');
+  }
+  document.getElementById('totalPesanan').textContent = rupiah(getTotalOrder());
+  hitungKembalian();
+}
+function getTotalOrder() { return currentOrder.reduce((sum, o) => sum + o.harga * o.qty, 0); }
+
+/* ============ KEMBALIAN ============ */
+function hitungKembalian() {
+  const total = getTotalOrder();
+  const bayar = parseNominal(document.getElementById('uangPelanggan').value);
+  const kembali = bayar - total;
+  document.getElementById('kembalian').textContent = rupiah(kembali > 0 ? kembali : 0);
+}
+function quickNominal(n) {
+  const el = document.getElementById('uangPelanggan');
+  el.value = parseNominal(el.value) + n;
+  hitungKembalian();
+}
+function uangPas() {
+  document.getElementById('uangPelanggan').value = getTotalOrder() || '';
+  hitungKembalian();
+}
+
+/* ============ SIMPAN TRANSAKSI ============ */
+function simpanTransaksi() {
+  if (currentOrder.length === 0) return toast('Pesanan masih kosong', true);
+  const total = getTotalOrder();
+  const bayar = parseNominal(document.getElementById('uangPelanggan').value);
+  if (bayar < total) return toast('Uang pelanggan kurang!', true);
+  const metode = document.querySelector('input[name="metode"]:checked').value;
+
+  state.transaksi.push({
+    id: uid(),
+    waktu: new Date().toISOString(),
+    tanggalBisnis: getTanggalBisnis(),
+    items: currentOrder.map(o => ({ ...o })),
+    total, bayar, kembalian: bayar - total, metode
+  });
+  saveState();
+
+  currentOrder = [];
+  document.getElementById('uangPelanggan').value = '';
+  renderOrder(); renderAll();
+  toast(`Tersimpan • Kembalian ${rupiah(bayar - total)}`);
+}
+
+/* ============ REKAP ============ */
+function renderRekap() {
+  const today = getTanggalBisnis();
+  const list = state.transaksi.filter(t => (t.tanggalBisnis || getTanggalBisnisFromISO(t.waktu)) === today);
+  const tunai = list.filter(t => t.metode === 'tunai');
+  const qris = list.filter(t => t.metode === 'qris');
+
+  document.getElementById('rekapTunai').textContent = rupiah(tunai.reduce((s, t) => s + t.total, 0));
+  document.getElementById('rekapTunaiCount').textContent = tunai.length + ' transaksi';
+  document.getElementById('rekapQris').textContent = rupiah(qris.reduce((s, t) => s + t.total, 0));
+  document.getElementById('rekapQrisCount').textContent = qris.length + ' transaksi';
+  document.getElementById('rekapTotal').textContent = rupiah(list.reduce((s, t) => s + t.total, 0));
+  document.getElementById('rekapTotalCount').textContent = list.length + ' transaksi';
+  document.getElementById('rekapTanggalLabel').textContent = formatTanggalPanjang(today);
+  document.getElementById('jamOpLabel').textContent = `Tutup jam ${state.settings.jamTutup}`;
+  document.getElementById('tanggalBisnisLabel').textContent = formatTanggalPanjang(today);
+}
+
+/* ============ RIWAYAT ============ */
+function renderRiwayat() {
+  const filterTgl = document.getElementById('filterTanggal').value;
+  const filterMetode = document.getElementById('filterMetode').value;
+  let list = [...state.transaksi];
+  if (filterTgl) list = list.filter(t => (t.tanggalBisnis || getTanggalBisnisFromISO(t.waktu)) === filterTgl);
+  if (filterMetode !== 'all') list = list.filter(t => t.metode === filterMetode);
+  list.sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
+
+  const total = list.reduce((s, t) => s + t.total, 0);
+  document.getElementById('riwayatCount').textContent = list.length + ' transaksi';
+  document.getElementById('riwayatTotal').textContent = rupiah(total);
+
+  const container = document.getElementById('trxList');
+  if (list.length === 0) {
+    container.innerHTML = '<div class="empty">Tidak ada transaksi</div>';
+    return;
+  }
+  container.innerHTML = list.map(t => {
+    const waktu = new Date(t.waktu);
+    const jam = waktu.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    const tgl = formatTanggalPanjang(t.tanggalBisnis || t.waktu.slice(0,10));
+    const itemsStr = t.items.map(i => `${i.nama} x${i.qty}`).join(', ');
+    return `
+      <div class="trx-item ${t.metode}">
+        <div class="trx-head">
+          <span class="trx-time">${jam} • ${tgl} ${t.metode === 'tunai' ? '💵' : '📱'}</span>
+          <span class="trx-total">${rupiah(t.total)}</span>
+        </div>
+        <div class="trx-items">${itemsStr}</div>
+        <div class="trx-items" style="font-size:.75rem;">Bayar: ${rupiah(t.bayar)} • Kembalian: ${rupiah(t.kembalian)}</div>
+        <div class="trx-actions">
+          <button class="btn-blue" onclick="editTransaksi('${t.id}')">✏️ Edit</button>
+          <button class="btn-red" onclick="hapusTransaksi('${t.id}')">🗑️ Hapus</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+function hapusTransaksi(id) {
+  showConfirm('Hapus transaksi?', 'Transaksi ini akan dihapus permanen dari riwayat.', () => {
+    state.transaksi = state.transaksi.filter(t => t.id !== id);
+    saveState(); renderAll(); toast('Transaksi dihapus');
+  });
+}
+function editTransaksi(id) {
+  const trx = state.transaksi.find(t => t.id === id);
+  if (!trx) return;
+  editTrxId = id;
+  currentOrder = trx.items.map(i => ({ ...i }));
+  document.getElementById('uangPelanggan').value = trx.bayar;
+  document.querySelector(`input[name="metode"][value="${trx.metode}"]`).checked = true;
+  switchTab('kasir');
+  renderOrder();
+  const btn = document.getElementById('btnSimpanTrx');
+  btn.textContent = '💾 Update Transaksi';
+  btn.onclick = updateTransaksi;
+  document.getElementById('btnBatalEdit').style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  toast('Mode edit aktif');
+}
+function updateTransaksi() {
+  const trx = state.transaksi.find(t => t.id === editTrxId);
+  if (!trx) return;
+  if (currentOrder.length === 0) return toast('Pesanan masih kosong', true);
+  const total = getTotalOrder();
+  const bayar = parseNominal(document.getElementById('uangPelanggan').value);
+  if (bayar < total) return toast('Uang pelanggan kurang!', true);
+  const metode = document.querySelector('input[name="metode"]:checked').value;
+
+  trx.items = currentOrder.map(o => ({ ...o }));
+  trx.total = total; trx.bayar = bayar; trx.kembalian = bayar - total; trx.metode = metode;
+  saveState();
+  batalEdit(true);
+  renderAll();
+  switchTab('rekap');
+  toast('Transaksi diperbarui');
+}
+function batalEdit(silent) {
+  editTrxId = null;
+  currentOrder = [];
+  document.getElementById('uangPelanggan').value = '';
+  renderOrder();
+  const btn = document.getElementById('btnSimpanTrx');
+  btn.textContent = '✅ Simpan Transaksi';
+  btn.onclick = simpanTransaksi;
+  document.getElementById('btnBatalEdit').style.display = 'none';
+  if (!silent) toast('Edit dibatalkan');
+}
+
+/* ============ RESET ============ */
+function konfirmasiReset() {
+  const today = getTanggalBisnis();
+  const list = state.transaksi.filter(t => (t.tanggalBisnis || getTanggalBisnisFromISO(t.waktu)) === today);
+  showConfirm('Reset Hari Ini?', `Menghapus ${list.length} transaksi pada ${formatTanggalPanjang(today)}. Tidak bisa dibatalkan.`, () => {
+    state.transaksi = state.transaksi.filter(t => (t.tanggalBisnis || getTanggalBisnisFromISO(t.waktu)) !== today);
+    saveState(); renderAll(); toast('Hari berhasil direset');
+  });
+}
+
+/* ============ EKSPOR / BACKUP ============ */
+function eksporCSV() {
+  if (state.transaksi.length === 0) return toast('Belum ada data', true);
+  const rows = [['Tanggal Bisnis','Waktu','Metode','Item','Total','Bayar','Kembalian']];
+  const list = [...state.transaksi].sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
+  list.forEach(t => {
+    const waktu = new Date(t.waktu);
+    rows.push([
+      t.tanggalBisnis || getTanggalBisnisFromISO(t.waktu),
+      waktu.toLocaleString('id-ID'),
+      t.metode,
+      t.items.map(i => `${i.nama} x${i.qty}`).join('; '),
+      t.total, t.bayar, t.kembalian
+    ]);
+  });
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `angkringan_${getTanggalBisnis()}.csv`; a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV berhasil diekspor');
+}
+function backupJSON() {
+  const data = { ...state, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `backup_angkringan_${new Date().toISOString().slice(0,10)}.json`; a.click();
+  URL.revokeObjectURL(url);
+  toast('Backup berhasil diunduh');
+}
+function importJSON(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.transaksi || !data.menus) throw new Error('Format tidak valid');
+      showConfirm('Import Backup?', 'Data saat ini akan diganti dengan data dari backup.', () => {
+        state = { ...data, settings: data.settings || { jamTutup: '02:00' } };
+        saveState(); renderAll(); toast('Backup berhasil diimport');
+      });
+    } catch (err) { toast('File backup tidak valid', true); }
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+}
+
+/* ============ SETTING ============ */
+function loadSetting() {
+  document.getElementById('jamTutup').value = state.settings.jamTutup || '02:00';
+}
+function simpanSetting() {
+  state.settings.jamTutup = document.getElementById('jamTutup').value || '02:00';
+  saveState(); renderRekap();
+  toast('Pengaturan disimpan');
+}
+
+/* ============ MODAL ============ */
+let modalCallback = null;
+function showConfirm(title, text, cb) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalText').textContent = text;
+  document.getElementById('modalBg').classList.add('show');
+  modalCallback = cb;
+}
+function closeModal() {
+  document.getElementById('modalBg').classList.remove('show');
+  modalCallback = null;
+}
+document.getElementById('modalConfirm').onclick = () => { if (modalCallback) modalCallback(); closeModal(); };
+document.getElementById('modalBg').onclick = e => { if (e.target.id === 'modalBg') closeModal(); };
+
+/* ============ TABS ============ */
+function switchTab(name) {
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+}
+document.querySelectorAll('.tabs button').forEach(btn => {
+  btn.onclick = () => switchTab(btn.dataset.tab);
+});
+
+/* ============ RENDER ALL ============ */
+function renderAll() {
+  renderMenu();
+  renderOrder();
+  renderRekap();
+  renderRiwayat();
+  loadSetting();
+}
+
+/* ============ START ============ */
+loadState();
+renderAll();
+updateClock();
+document.getElementById('filterTanggal').value = getTanggalBisnis();
+window.addEventListener('beforeunload', saveState);
+
+/* ============ SERVICE WORKER ============ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('✅ SW terdaftar'))
+      .catch(err => console.error('❌ SW error:', err));
+  });
+}
+
+/* ============ INSTALL PROMPT ============ */
+let deferredPrompt = null;
+const installBanner = document.getElementById('installBanner');
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (!localStorage.getItem('install_banner_closed')) {
+    installBanner.style.display = 'flex';
+  }
+});
+document.getElementById('btnInstall').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  installBanner.style.display = 'none';
+});
+document.getElementById('btnCloseInstall').addEventListener('click', () => {
+  installBanner.style.display = 'none';
+  localStorage.setItem('install_banner_closed', '1');
+});
+window.addEventListener('appinstalled', () => {
+  installBanner.style.display = 'none';
+});
+</script>
+</body>
+</html>
